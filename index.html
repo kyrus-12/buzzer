@@ -127,6 +127,35 @@
         .reset-link { margin-top: 40px; color: #aaa; cursor: pointer; font-size: 0.8rem; }
         footer { padding: 20px; font-size: 0.7rem; opacity: 0.5; }
         #yt-player { position: absolute; top: -1000px; visibility: hidden; }
+
+        /* Music Control Panel */
+        .music-controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 8px;
+            z-index: 2000; /* Above modals */
+            background: var(--glass);
+            padding: 10px;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .m-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+
+        .m-btn:hover { background: var(--accent); }
+        .m-btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -187,6 +216,12 @@
         <div class="reset-link" onclick="resetServer()">Full System Reset</div>
     </div>
 
+    <div class="music-controls" id="music-ui">
+        <button class="m-btn" onclick="musicAction('play')">▶ Play</button>
+        <button class="m-btn" onclick="musicAction('pause')">⏸ Pause</button>
+        <button class="m-btn" onclick="musicAction('restart')">🔄 Restart</button>
+    </div>
+
     <script>
         const socket = io();
         let myName = "", myColor = "", isAdmin = false, currentWinner = null, currentQId = null;
@@ -210,21 +245,39 @@
             player.loadVideoById(playlist[currentTrackIndex]);
         }
 
+        function musicAction(action) {
+            if (!player) return;
+            
+            if (action === 'play') {
+                player.playVideo();
+            } else if (action === 'pause') {
+                player.pauseVideo();
+            } else if (action === 'restart') {
+                player.seekTo(0);
+                player.playVideo();
+            }
+        }
+
         function login() {
             const nameInput = document.getElementById('groupName').value.trim();
             const passInput = document.getElementById('groupPass').value.trim();
             if (!nameInput) return alert("Enter a color!");
+            
             myName = nameInput;
             myColor = nameInput.toLowerCase();
             document.getElementById('login-screen').classList.add('hidden');
+            
             if (passInput === "123") {
                 isAdmin = true;
                 document.getElementById('main-section').classList.remove('hidden');
-                if(player) player.playVideo(); 
             } else {
                 document.getElementById('wait-screen').classList.remove('hidden');
                 document.body.style.backgroundColor = myColor;
                 document.getElementById('wait-text').innerText = myName.toUpperCase() + " READY";
+            }
+
+            if(player && typeof player.playVideo === 'function') {
+                player.playVideo();
             }
         }
 
