@@ -58,7 +58,7 @@
 
         #wait-text { font-size: 2.5rem; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 30px; }
 
-        /* Integrated Question Box (No Modals) */
+        /* Integrated Question Box */
         .question-display {
             background: var(--glass);
             backdrop-filter: blur(10px);
@@ -101,7 +101,7 @@
         #buzz-btn:active { transform: translateY(10px); box-shadow: 0 5px 0 #922b21; }
         #buzz-btn:disabled { background: #555; box-shadow: 0 5px 0 #333; opacity: 0.6; cursor: not-allowed; transform: translateY(10px); }
 
-        /* Admin Controls for Result */
+        /* Admin Controls */
         .admin-result-controls { 
             position: fixed; top: 20px; right: 20px; display: flex; gap: 10px;
             background: rgba(0,0,0,0.5); padding: 15px; border-radius: 15px; backdrop-filter: blur(5px);
@@ -114,8 +114,6 @@
         .fs-btn { position: fixed; bottom: 20px; left: 20px; background: var(--glass); border: 1px solid var(--glass-border); color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
         .reset-link { margin-top: 40px; color: #aaa; cursor: pointer; font-size: 0.8rem; }
         footer { margin-top: auto; padding: 10px; font-size: 0.7rem; opacity: 0.5; }
-
-        /* YouTube Hidden */
         #yt-player { position: absolute; top: -1000px; visibility: hidden; }
     </style>
 </head>
@@ -178,7 +176,6 @@
         let currentWinner = null;
         let currentQId = null;
         
-        // Music Configuration
         let player; 
         let currentTrackIndex = 0;
         const playlist = ['jfKfPfyJRdk', 'dQw4w9WgXcQ', '5qap5aO4i9A'];
@@ -232,10 +229,9 @@
 
         function toggleFS() {
             if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-            else document.exitFullscreen();
+            else if (document.exitFullscreen) document.exitFullscreen();
         }
 
-        // ADMIN LOGIC
         function adminOpenQ(id, title, text) {
             currentQId = id;
             socket.emit('open-question', { title, text });
@@ -269,7 +265,6 @@
             socket.emit('reset');
         }
 
-        // SOCKET LISTENERS
         socket.on('show-question', (data) => {
             if (!isAdmin) {
                 const qBox = document.getElementById('live-q-notif');
@@ -309,7 +304,7 @@
         socket.on('reset-buzzer', () => {
             currentWinner = null;
             if (isAdmin) {
-                document.body.style.backgroundColor = var(--bg-dark);
+                document.body.style.backgroundColor = "#1a1a2e"; // Fixed from var reference
                 document.getElementById('admin-header').innerText = "Admin Control Panel";
             } else {
                 document.body.style.backgroundColor = myColor;
