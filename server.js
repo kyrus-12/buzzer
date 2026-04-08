@@ -24,6 +24,13 @@ io.on('connection', (socket) => {
         socket.emit('show-question', currentActiveQuestion);
     }
 
+    // --- ADD THE MUSIC SYNC LOGIC HERE ---
+    socket.on('admin-logged-in', () => {
+        // This sends the 'start-music' command to EVERYONE connected
+        io.emit('start-music'); 
+        console.log("🎵 Admin logged in: Triggering music for everyone.");
+    });
+
     // Admin opens a question
     socket.on('open-question', (data) => {
         currentActiveQuestion = data; // Store the state
