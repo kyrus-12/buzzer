@@ -58,7 +58,7 @@
 
         #wait-text { font-size: 2.5rem; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 30px; }
 
-        /* Student Integrated Question (Below Buzzer) */
+        /* Integrated Question Style (Shared Style) */
         .question-display {
             background: var(--glass);
             backdrop-filter: blur(10px);
@@ -66,7 +66,7 @@
             border: 1px solid var(--glass-border);
             padding: 25px;
             border-radius: 20px;
-            margin-top: 30px;
+            margin: 20px auto;
             max-width: 600px;
             width: 90%;
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
@@ -74,8 +74,8 @@
         }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        #q-title-sync { color: #f1c40f; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 10px; }
-        #q-text-sync { font-size: 1.8rem; font-weight: 600; line-height: 1.3; }
+        .q-title-text { color: #f1c40f; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 10px; }
+        .q-body-text { font-size: 1.8rem; font-weight: 600; line-height: 1.3; }
 
         /* Admin Section */
         #main-section { height: 100vh; overflow-y: auto; padding: 40px 20px; text-align: center; }
@@ -114,7 +114,7 @@
 
         .fs-btn { position: fixed; bottom: 20px; left: 20px; background: var(--glass); border: 1px solid var(--glass-border); color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
         .reset-link { margin-top: 40px; color: #aaa; cursor: pointer; font-size: 0.8rem; }
-        footer { margin-top: auto; padding: 10px; font-size: 0.7rem; opacity: 0.5; }
+        footer { padding: 20px; font-size: 0.7rem; opacity: 0.5; }
         #yt-player { position: absolute; top: -1000px; visibility: hidden; }
     </style>
 </head>
@@ -137,8 +137,8 @@
         <button id="buzz-btn" onclick="sendBuzz()">BUZZ!</button>
         
         <div id="live-q-notif" class="question-display hidden">
-            <span id="q-title-sync">QUESTION TITLE</span>
-            <div id="q-text-sync">Question content will appear here...</div>
+            <span id="q-title-sync" class="q-title-text">QUESTION TITLE</span>
+            <div id="q-text-sync" class="q-body-text">Question content...</div>
         </div>
 
         <button class="fs-btn" onclick="toggleFS()">Full Screen (F)</button>
@@ -147,6 +147,11 @@
     <div id="main-section" class="hidden">
         <h1 id="admin-header">Admin Control Panel</h1>
         
+        <div id="admin-q-preview" class="question-display hidden">
+            <span id="admin-q-title" class="q-title-text"></span>
+            <div id="admin-q-text" class="q-body-text"></div>
+        </div>
+
         <div class="grid">
             <div id="q1" class="box" onclick="adminOpenQ('q1', 'Science Q1', 'Largest planet in our solar system?')">Q1</div>
             <div id="q2" class="box" onclick="adminOpenQ('q2', 'Math Q2', 'What is 15 x 4?')">Q2</div>
@@ -163,7 +168,7 @@
         </div>
 
         <p style="font-size: 0.8rem; color: #aaa; margin-top:20px;">
-            [S] Play Music | [P] Pause | [N] Next | [F] Fullscreen
+            [S] Play | [P] Pause | [N] Next | [F] Fullscreen
         </p>
         <div class="reset-link" onclick="resetServer()">Full System Reset</div>
         <footer>Prepared by John Renz I. Vertudazo</footer>
@@ -171,17 +176,11 @@
 
     <script>
         const socket = io();
-        let myName = "";
-        let myColor = "";
-        let isAdmin = false;
-        let currentWinner = null;
-        let currentQId = null;
-        
-        // YouTube Player setup
-        let player; 
-        let currentTrackIndex = 0;
+        let myName = "", myColor = "", isAdmin = false, currentWinner = null, currentQId = null;
+        let player, currentTrackIndex = 0;
         const playlist = ['jfKfPfyJRdk', 'dQw4w9WgXcQ', '5qap5aO4i9A'];
 
+        // YT API
         var tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         var firstScriptTag = document.getElementsByTagName('script')[0];
@@ -193,7 +192,6 @@
                 events: { 'onStateChange': (e) => { if(e.data === 0) nextTrack(); } }
             });
         }
-
         function nextTrack() {
             currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
             player.loadVideoById(playlist[currentTrackIndex]);
@@ -203,11 +201,9 @@
             const nameInput = document.getElementById('groupName').value.trim();
             const passInput = document.getElementById('groupPass').value.trim();
             if (!nameInput) return alert("Enter a color!");
-
             myName = nameInput;
             myColor = nameInput.toLowerCase();
             document.getElementById('login-screen').classList.add('hidden');
-
             if (passInput === "123") {
                 isAdmin = true;
                 document.getElementById('main-section').classList.remove('hidden');
@@ -234,16 +230,24 @@
             else if (document.exitFullscreen) document.exitFullscreen();
         }
 
-        // Logic for Admin
+        // ADMIN LOGIC
         function adminOpenQ(id, title, text) {
             currentQId = id;
             socket.emit('open-question', { title, text });
+            
+            // Show question text for Admin
+            const adminPreview = document.getElementById('admin-q-preview');
+            adminPreview.classList.remove('hidden');
+            document.getElementById('admin-q-title').innerText = title;
+            document.getElementById('admin-q-text').innerText = text;
+            
             document.getElementById('admin-modal-controls').classList.remove('hidden');
             document.getElementById('admin-header').innerText = title;
         }
 
         function closeQuestionAdmin() {
             socket.emit('close-question');
+            document.getElementById('admin-q-preview').classList.add('hidden');
             document.getElementById('admin-modal-controls').classList.add('hidden');
             document.getElementById('admin-header').innerText = "Admin Control Panel";
         }
@@ -260,15 +264,10 @@
             closeQuestionAdmin();
         }
 
-        function sendBuzz() {
-            socket.emit('buzz', { name: myName, color: myColor });
-        }
+        function sendBuzz() { socket.emit('buzz', { name: myName, color: myColor }); }
+        function resetServer() { socket.emit('reset'); }
 
-        function resetServer() {
-            socket.emit('reset');
-        }
-
-        // Socket Listeners
+        // SOCKETS
         socket.on('show-question', (data) => {
             if (!isAdmin) {
                 const qBox = document.getElementById('live-q-notif');
@@ -279,9 +278,7 @@
         });
 
         socket.on('hide-question', () => {
-            if (!isAdmin) {
-                document.getElementById('live-q-notif').classList.add('hidden');
-            }
+            if (!isAdmin) document.getElementById('live-q-notif').classList.add('hidden');
         });
 
         socket.on('buzzed', (winner) => {
