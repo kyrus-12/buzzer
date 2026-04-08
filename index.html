@@ -6,45 +6,117 @@
     <title>Pro Group Buzzer System</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        :root { --bg-color: #2c3e50; --accent: #27ae60; --danger: #e74c3c; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); color: white; transition: 0.4s; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        :root { 
+            --bg-dark: #1a1a2e; 
+            --accent: #27ae60; 
+            --danger: #e74c3c; 
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        body { 
+            margin: 0; 
+            font-family: 'Inter', 'Segoe UI', sans-serif; 
+            background: var(--bg-dark); 
+            color: white; 
+            transition: background 0.5s ease; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+
         .hidden { display: none !important; }
-        
-        /* Login */
-        #login-screen { flex: 1; display: flex; justify-content: center; align-items: center; }
-        .login-card { background: white; color: #333; padding: 40px; border-radius: 15px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        input { display: block; width: 250px; margin: 10px auto; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem; }
-        .login-btn { background: var(--accent); color: white; border: none; padding: 10px 30px; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: bold; }
 
-        /* Screens */
-        #wait-screen, #main-section { height: 100vh; text-align: center; overflow-y: auto; padding: 20px; position: relative; }
-        #wait-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        /* Login Styling */
+        #login-screen { flex: 1; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, #2c3e50 0%, #000 100%); }
+        .login-card { 
+            background: rgba(255, 255, 255, 0.95); 
+            color: #333; 
+            padding: 40px; 
+            border-radius: 24px; 
+            text-align: center; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            width: 320px;
+        }
+        input { 
+            display: block; width: 100%; margin: 15px 0; padding: 14px; 
+            border-radius: 10px; border: 1px solid #ddd; font-size: 1rem; box-sizing: border-box;
+        }
+        .login-btn { 
+            background: var(--accent); color: white; border: none; width: 100%;
+            padding: 12px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; font-weight: bold; 
+            transition: 0.3s;
+        }
+        .login-btn:hover { filter: brightness(1.1); transform: translateY(-2px); }
 
-        /* Question Grid */
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; max-width: 1000px; margin: 20px auto; }
-        .box { background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255, 255, 255, 0.4); padding: 30px; border-radius: 12px; cursor: pointer; transition: 0.3s; font-weight: bold; font-size: 1.2rem; }
-        .box:hover { background: rgba(255, 255, 255, 0.3); transform: scale(1.05); }
+        /* Buzzer Screen (Wait Screen) */
+        #wait-screen { 
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            padding: 20px; text-align: center;
+        }
 
-        /* Modal Styles */
-        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 100; }
-        .modal-content { background: white; color: #333; padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; text-align: center; position: relative; }
-        .admin-controls { margin-top: 20px; display: flex; justify-content: center; gap: 10px; }
-        .ctrl-btn { border: none; padding: 10px 20px; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; }
+        #wait-text { font-size: 2.5rem; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 30px; }
+
+        /* Integrated Question Box (No Modals) */
+        .question-display {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 25px;
+            border-radius: 20px;
+            margin-top: 30px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        #q-title-sync { color: #f1c40f; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 10px; }
+        #q-text-sync { font-size: 1.8rem; font-weight: 600; line-height: 1.3; }
+
+        /* Admin Section */
+        #main-section { height: 100vh; overflow-y: auto; padding: 40px 20px; text-align: center; }
+        .grid { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+            gap: 20px; max-width: 900px; margin: 30px auto; 
+        }
+        .box { 
+            background: var(--glass); border: 1px solid var(--glass-border); 
+            padding: 25px; border-radius: 15px; cursor: pointer; 
+            transition: all 0.3s; font-weight: bold; font-size: 1.2rem; 
+        }
+        .box:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+
+        /* Buzzer Button */
+        #buzz-btn { 
+            width: 220px; height: 220px; border-radius: 50%; border: 10px solid white; 
+            background: linear-gradient(145deg, #e74c3c, #c0392b); color: white; 
+            font-size: 2rem; font-weight: 900; cursor: pointer; transition: 0.2s; 
+            box-shadow: 0 15px 0 #922b21, 0 20px 30px rgba(0,0,0,0.4); 
+            display: block; outline: none;
+        }
+        #buzz-btn:active { transform: translateY(10px); box-shadow: 0 5px 0 #922b21; }
+        #buzz-btn:disabled { background: #555; box-shadow: 0 5px 0 #333; opacity: 0.6; cursor: not-allowed; transform: translateY(10px); }
+
+        /* Admin Controls for Result */
+        .admin-result-controls { 
+            position: fixed; top: 20px; right: 20px; display: flex; gap: 10px;
+            background: rgba(0,0,0,0.5); padding: 15px; border-radius: 15px; backdrop-filter: blur(5px);
+        }
+        .ctrl-btn { border: none; padding: 12px 24px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-check { background: var(--accent); }
         .btn-wrong { background: var(--danger); }
+        .btn-close { background: #7f8c8d; }
 
-        /* Buzzer */
-        #buzz-btn { width: 180px; height: 180px; border-radius: 50%; border: 8px solid white; background: #e74c3c; color: white; font-size: 1.8rem; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 10px #c0392b; margin: 20px auto; display: block; }
-        #buzz-btn:active { transform: translateY(4px); box-shadow: 0 2px #c0392b; }
-        #buzz-btn:disabled { background: #95a5a6; box-shadow: none; opacity: 0.5; cursor: not-allowed; }
+        .fs-btn { position: fixed; bottom: 20px; left: 20px; background: var(--glass); border: 1px solid var(--glass-border); color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
+        .reset-link { margin-top: 40px; color: #aaa; cursor: pointer; font-size: 0.8rem; }
+        footer { margin-top: auto; padding: 10px; font-size: 0.7rem; opacity: 0.5; }
 
-        /* Helper Buttons */
-        .fs-btn { position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .reset-link { margin-top: 20px; color: #ddd; cursor: pointer; text-decoration: underline; opacity: 0.7; font-size: 0.8rem; }
-        #live-q-notif { background: rgba(255,255,0,0.2); border: 1px solid yellow; padding: 10px; margin-bottom: 20px; border-radius: 10px; font-style: italic; }
-        
-        /* YouTube Hidden Container */
-        #yt-player { position: absolute; top: -1000px; left: -1000px; visibility: hidden; pointer-events: none; }
+        /* YouTube Hidden */
+        #yt-player { position: absolute; top: -1000px; visibility: hidden; }
     </style>
 </head>
 <body>
@@ -53,47 +125,49 @@
 
     <div id="login-screen">
         <div class="login-card">
-            <h2>Buzzer Login</h2>
+            <h2 style="margin-top:0">Buzzer Login</h2>
             <input type="text" id="groupName" placeholder="Group Color (e.g. Red)">
             <input type="password" id="groupPass" placeholder="Admin Password">
             <button class="login-btn" onclick="login()">Enter Game</button>
+            <p style="font-size: 10px; color: #999; margin-top: 15px;">System by John Renz I. Vertudazo</p>
         </div>
     </div>
 
     <div id="wait-screen" class="hidden">
-        <div id="live-q-notif" class="hidden">QUESTION: <span id="q-text-sync"></span></div>
         <h1 id="wait-text">READY</h1>
         <button id="buzz-btn" onclick="sendBuzz()">BUZZ!</button>
+        
+        <div id="live-q-notif" class="question-display hidden">
+            <span id="q-title-sync">QUESTION TITLE</span>
+            <div id="q-text-sync">Question content will appear here...</div>
+        </div>
+
         <button class="fs-btn" onclick="toggleFS()">Full Screen (F)</button>
     </div>
 
     <div id="main-section" class="hidden">
         <h1 id="admin-header">Admin Control Panel</h1>
+        
         <div class="grid">
-            <div id="q1" class="box" onclick="adminOpenQ('q1', 'Question 1', 'Largest planet in our solar system?')">Q1</div>
-            <div id="q2" class="box" onclick="adminOpenQ('q2', 'Question 2', 'What is 15 x 4?')">Q2</div>
-            <div id="q3" class="box" onclick="adminOpenQ('q3', 'Question 3', 'Element symbol for Oxygen?')">Q3</div>
-            <div id="q4" class="box" onclick="adminOpenQ('q4', 'Question 4', 'Who painted Mona Lisa?')">Q4</div>
-            <div id="q5" class="box" onclick="adminOpenQ('q5', 'Question 5', 'Capital of Japan?')">Q5</div>
-            <div id="q6" class="box" onclick="adminOpenQ('q6', 'Question 6', 'How many legs on a spider?')">Q6</div>
+            <div id="q1" class="box" onclick="adminOpenQ('q1', 'Science Q1', 'Largest planet in our solar system?')">Q1</div>
+            <div id="q2" class="box" onclick="adminOpenQ('q2', 'Math Q2', 'What is 15 x 4?')">Q2</div>
+            <div id="q3" class="box" onclick="adminOpenQ('q3', 'Science Q3', 'Element symbol for Oxygen?')">Q3</div>
+            <div id="q4" class="box" onclick="adminOpenQ('q4', 'Arts Q4', 'Who painted Mona Lisa?')">Q4</div>
+            <div id="q5" class="box" onclick="adminOpenQ('q5', 'Geography Q5', 'Capital of Japan?')">Q5</div>
+            <div id="q6" class="box" onclick="adminOpenQ('q6', 'Biology Q6', 'How many legs on a spider?')">Q6</div>
         </div>
-        <p style="font-size: 0.8rem; color: #aaa;">Admin Keys: [S] Play | [P] Pause | [N] Next Song | [F] Fullscreen</p>
-        <div class="reset-link" onclick="resetServer()">Full System Reset</div>
-    </div>
 
-    <div id="modal-overlay" class="hidden">
-        <div class="modal-content">
-            <h2 id="modal-title"></h2>
-            <hr>
-            <p id="modal-body" style="font-size: 1.5rem;"></p>
-            
-            <div id="admin-modal-controls" class="admin-controls hidden">
-                <button class="ctrl-btn btn-check" onclick="markCorrect()">CHECK (Correct)</button>
-                <button class="ctrl-btn btn-wrong" onclick="markWrong()">WRONG</button>
-            </div>
-            <br>
-            <button onclick="closeModal()">Close Window</button>
+        <div id="admin-modal-controls" class="admin-result-controls hidden">
+            <button class="ctrl-btn btn-check" onclick="markCorrect()">CORRECT</button>
+            <button class="ctrl-btn btn-wrong" onclick="markWrong()">WRONG</button>
+            <button class="ctrl-btn btn-close" onclick="closeQuestionAdmin()">CLOSE Q</button>
         </div>
+
+        <p style="font-size: 0.8rem; color: #aaa; margin-top:20px;">
+            [S] Play Music | [P] Pause | [N] Next | [F] Fullscreen
+        </p>
+        <div class="reset-link" onclick="resetServer()">Full System Reset</div>
+        <footer>Prepared by John Renz I. Vertudazo</footer>
     </div>
 
     <script>
@@ -104,15 +178,10 @@
         let currentWinner = null;
         let currentQId = null;
         
-        // --- MULTIPLE MUSIC CONFIGURATION ---
+        // Music Configuration
         let player; 
         let currentTrackIndex = 0;
-        // ADD YOUR YOUTUBE VIDEO IDs HERE IN ORDER
-        const playlist = [
-            'jfKfPfyJRdk', // Track 1
-            'dQw4w9WgXcQ', // Track 2
-            '5qap5aO4i9A'  // Track 3
-        ];
+        const playlist = ['jfKfPfyJRdk', 'dQw4w9WgXcQ', '5qap5aO4i9A'];
 
         var tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
@@ -121,26 +190,13 @@
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('yt-player', {
-                height: '0',
-                width: '0',
-                videoId: playlist[currentTrackIndex],
-                events: {
-                    'onReady': () => console.log("Music Ready"),
-                    'onStateChange': onPlayerStateChange
-                }
+                height: '0', width: '0', videoId: playlist[currentTrackIndex],
+                events: { 'onStateChange': (e) => { if(e.data === 0) nextTrack(); } }
             });
         }
 
-        function onPlayerStateChange(event) {
-            // If the song ends (state 0), play the next one
-            if (event.data === YT.PlayerState.ENDED) {
-                nextTrack();
-            }
-        }
-
         function nextTrack() {
-            currentTrackIndex++;
-            if (currentTrackIndex >= playlist.length) currentTrackIndex = 0; // Loop back to start
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
             player.loadVideoById(playlist[currentTrackIndex]);
         }
 
@@ -156,7 +212,6 @@
             if (passInput === "123") {
                 isAdmin = true;
                 document.getElementById('main-section').classList.remove('hidden');
-                document.getElementById('admin-modal-controls').classList.remove('hidden');
                 if(player) player.playVideo(); 
             } else {
                 document.getElementById('wait-screen').classList.remove('hidden');
@@ -168,12 +223,10 @@
         document.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
             if (key === 'f') toggleFS();
-            if (key === 'e' && document.fullscreenElement) document.exitFullscreen();
-            
             if (isAdmin && player) {
                 if (key === 's') player.playVideo();
                 if (key === 'p') player.pauseVideo();
-                if (key === 'n') nextTrack(); // Skip to next song
+                if (key === 'n') nextTrack();
             }
         });
 
@@ -182,33 +235,30 @@
             else document.exitFullscreen();
         }
 
+        // ADMIN LOGIC
         function adminOpenQ(id, title, text) {
             currentQId = id;
             socket.emit('open-question', { title, text });
-            openModalUI(title, text);
+            document.getElementById('admin-modal-controls').classList.remove('hidden');
+            document.getElementById('admin-header').innerText = title;
         }
 
-        function openModalUI(title, text) {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-body').innerText = text;
-            document.getElementById('modal-overlay').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('modal-overlay').classList.add('hidden');
+        function closeQuestionAdmin() {
             socket.emit('close-question');
+            document.getElementById('admin-modal-controls').classList.add('hidden');
+            document.getElementById('admin-header').innerText = "Admin Control Panel";
         }
 
         function markCorrect() {
             if (currentWinner && currentQId) {
                 socket.emit('question-result', { id: currentQId, color: currentWinner.color, status: 'correct' });
-                closeModal();
+                closeQuestionAdmin();
             } else alert("Wait for a buzz!");
         }
 
         function markWrong() {
             socket.emit('question-result', { status: 'wrong' });
-            closeModal();
+            closeQuestionAdmin();
         }
 
         function sendBuzz() {
@@ -219,17 +269,18 @@
             socket.emit('reset');
         }
 
+        // SOCKET LISTENERS
         socket.on('show-question', (data) => {
             if (!isAdmin) {
-                document.getElementById('live-q-notif').classList.remove('hidden');
+                const qBox = document.getElementById('live-q-notif');
+                qBox.classList.remove('hidden');
+                document.getElementById('q-title-sync').innerText = data.title;
                 document.getElementById('q-text-sync').innerText = data.text;
-                openModalUI(data.title, data.text);
             }
         });
 
         socket.on('hide-question', () => {
             if (!isAdmin) {
-                document.getElementById('modal-overlay').classList.add('hidden');
                 document.getElementById('live-q-notif').classList.add('hidden');
             }
         });
@@ -237,9 +288,10 @@
         socket.on('buzzed', (winner) => {
             currentWinner = winner;
             document.body.style.backgroundColor = winner.color;
-            if (isAdmin) document.getElementById('admin-header').innerText = winner.name.toUpperCase() + " BUZZED!";
+            const msg = winner.name.toUpperCase() + " BUZZED!";
+            if (isAdmin) document.getElementById('admin-header').innerText = msg;
             else {
-                document.getElementById('wait-text').innerText = winner.name.toUpperCase() + " BUZZED!";
+                document.getElementById('wait-text').innerText = msg;
                 document.getElementById('buzz-btn').disabled = true;
             }
         });
@@ -247,16 +299,17 @@
         socket.on('update-grid', (data) => {
             const box = document.getElementById(data.id);
             if (box) {
-                box.style.backgroundColor = data.color;
+                box.style.background = data.color;
                 box.style.color = "white";
                 box.onclick = null;
+                box.innerText = "✓";
             }
         });
 
         socket.on('reset-buzzer', () => {
             currentWinner = null;
             if (isAdmin) {
-                document.body.style.backgroundColor = "#2c3e50";
+                document.body.style.backgroundColor = var(--bg-dark);
                 document.getElementById('admin-header').innerText = "Admin Control Panel";
             } else {
                 document.body.style.backgroundColor = myColor;
