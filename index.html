@@ -270,6 +270,7 @@
             if (passInput === "123") {
                 isAdmin = true;
                 document.getElementById('main-section').classList.remove('hidden');
+                socket.emit('admin-logged-in');
             } else {
                 document.getElementById('wait-screen').classList.remove('hidden');
                 document.body.style.backgroundColor = myColor;
@@ -372,6 +373,13 @@
                 document.body.style.backgroundColor = myColor;
                 document.getElementById('wait-text').innerText = myName.toUpperCase() + " READY";
                 document.getElementById('buzz-btn').disabled = false;
+            }
+        });
+
+        socket.on('start-music', () => {
+            console.log("Admin logged in. Starting music...");
+            if(player && typeof player.playVideo === 'function') {
+                player.playVideo();
             }
         });
     </script>
