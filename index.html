@@ -365,16 +365,55 @@
             }
         });
 
-        socket.on('reset-buzzer', () => {
-            currentWinner = null;
-            if (isAdmin) {
-                document.body.style.backgroundColor = "#1a1a2e"; 
-            } else {
-                document.body.style.backgroundColor = myColor;
-                document.getElementById('wait-text').innerText = myName.toUpperCase() + " READY";
-                document.getElementById('buzz-btn').disabled = false;
-            }
+        socket.on('reset-buzzer', (isFullReset) => {
+    currentWinner = null;
+    currentQId = null;
+
+    // 1. Reset Background Colors
+    if (isAdmin) {
+        document.body.style.backgroundColor = "#1a1a2e"; 
+    } else {
+        document.body.style.backgroundColor = myColor;
+        document.getElementById('wait-text').innerText = myName.toUpperCase() + " READY";
+        document.getElementById('buzz-btn').disabled = false;
+        // Hide any active question notifications
+        document.getElementById('live-q-notif').classList.add('hidden');
+    }
+
+    // 2. Clear the Question Grid (Only if it's a Full Reset)
+    if (isFullReset) {
+        const boxes = document.querySelectorAll('.box');
+        boxes.forEach((box, index) => {
+            const qNum = index + 1;
+            const qId = 'q' + qNum;
+            
+            // Restore visual style
+            box.style.background = ""; 
+            box.style.color = "";
+            box.innerText = "Q" + qNum;
+            
+            // Restore click functionality
+            box.onclick = function() {
+                // Manually re-triggering the adminOpenQ logic
+                // Make sure this matches your existing grid content
+                const questions = [
+    'I move up and down when you breathe in and out, Helping your lungs there is no doubt. What am I?',
+    'I’m behind your nose and mouth, you see, Air passes through me easily. What am I?',
+    'I sit on your face and help you smell, I take in air and filter it well. What am I?',
+    'I help you speak and make a sound, Air passing through me gets voice all around. What am I?',
+    'I branch like a tree inside your chest, Carrying air to lungs at their best. What am I?',
+    'I’m the whole system that helps you breathe, From nose to lungs, I work with ease. What am I?',
+    'I’m a tube where air passes through, From throat to lungs that’s what I do. What am I?',
+    'Inside your nose is where I stay, Warming the air along the way. What am I?',
+    'I’m where food and air both pass through, Your tongue helps me do what I do. What am I?',
+    'I come in pairs inside your chest, I help you breathe and do my best. What am I?'
+];
+                adminOpenQ(qId, 'GUESS-tion ' + qNum, questions[index]);
+            };
         });
+        alert("System Fully Reset for a New Game!");
+    }
+});
 
         socket.on('start-music', () => {
             console.log("Admin logged in. Starting music...");
