@@ -146,35 +146,46 @@
         let myGroupName = "";
         let myGroupColor = "";
 
-        function login() {
-            const nameInput = document.getElementById('groupName').value.trim();
-            const passInput = document.getElementById('groupPass').value.trim();
 
-            if (!nameInput) {
-                alert("Enter your group name!");
-                return;
-            }
+function login() {
+    const nameInput = document.getElementById('groupName').value.trim();
+    const passInput = document.getElementById('groupPass').value.trim();
 
-            myGroupName = nameInput;
-            myGroupColor = nameInput.toLowerCase();
+    // 1. Check if name is entered
+    if (!nameInput) {
+        alert("Enter your group name!");
+        return;
+    }
 
-            // Set the background color
-            document.body.style.backgroundColor = myGroupColor;
-            
-            // Hide login
-            document.getElementById('login-screen').classList.add('hidden');
+    myGroupName = nameInput;
+    myGroupColor = nameInput.toLowerCase();
 
-            if (passInput !== "") {
-                // Show Main Section
-                document.getElementById('main-section').classList.remove('hidden');
-                document.getElementById('header-text').innerText = "Group: " + myGroupName;
-            } else {
-                // Show Full Screen Color only
-                document.getElementById('wait-screen').classList.remove('hidden');
-                document.getElementById('wait-text').innerText = myGroupName.toUpperCase() + " READY";
-            }
-        }
+    // Set the background color globally
+    document.body.style.backgroundColor = myGroupColor;
+    
+    // Hide the login box
+    document.getElementById('login-screen').classList.add('hidden');
 
+    // 2. PASSWORD LOGIC
+    // Change "Secret123" to your desired password
+    const masterPassword = "Secret123"; 
+
+    if (passInput === masterPassword) {
+        // CORRECT PASSWORD: Show Main Section with Questions
+        document.getElementById('main-section').classList.remove('hidden');
+        document.getElementById('header-text').innerText = "Group: " + myGroupName;
+    } else if (passInput === "") {
+        // NO PASSWORD: Show only the full-screen color (Buzzer Ready mode)
+        document.getElementById('wait-screen').classList.remove('hidden');
+        document.getElementById('wait-text').innerText = myGroupName.toUpperCase() + " READY";
+    } else {
+        // WRONG PASSWORD: Alert user and put them in wait mode
+        alert("Incorrect password! Access to questions denied.");
+        document.getElementById('wait-screen').classList.remove('hidden');
+        document.getElementById('wait-text').innerText = myGroupName.toUpperCase() + " (VIEWER ONLY)";
+    }
+}
+        
         function sendBuzz() {
             socket.emit('buzz', { name: myGroupName, color: myGroupColor });
         }
