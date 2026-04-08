@@ -68,12 +68,13 @@ io.on('connection', (socket) => {
 
     // Full System Reset
     socket.on('reset', () => {
-        firstBuzzer = null;
-        currentActiveQuestion = null;
-        io.emit('reset-buzzer');
-        io.emit('hide-question'); // Ensure UI is cleared for everyone
-        console.log("♻️ System Reset by Admin");
-    });
+    firstBuzzer = null;
+    currentActiveQuestion = null;
+    // Add 'true' here to signal a FULL reset
+    io.emit('reset-buzzer', true); 
+    io.emit('hide-question'); 
+    console.log("♻️ Full System Reset by Admin");
+});
 });
 
 // Prepared and modified by John Renz I. Vertudazo
