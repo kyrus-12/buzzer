@@ -7,56 +7,69 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Track who buzzed first
+// Track current state
 let firstBuzzer = null;
+let currentActiveQuestion = null; // Track if a question is currently live
 
 app.use(express.static(__dirname));
 
 io.on('connection', (socket) => {
-    // Sync late-comers with the current buzz state
+    // 1. Sync late-comers with the current buzzer state
     if (firstBuzzer) {
         socket.emit('buzzed', firstBuzzer);
     }
 
-    // NEW: Tell students to open their modal when Admin opens a question
+    // 2. Sync late-comers with the active question (So it doesn't disappear on refresh)
+    if (currentActiveQuestion) {
+        socket.emit('show-question', currentActiveQuestion);
+    }
+
+    // Admin opens a question
     socket.on('open-question', (data) => {
+        currentActiveQuestion = data; // Store the state
         socket.broadcast.emit('show-question', data);
     });
 
-    // NEW: Tell students to close their modal
+    // Admin closes a question
     socket.on('close-question', () => {
+        currentActiveQuestion = null; // Clear the state
         socket.broadcast.emit('hide-question');
     });
 
-    // NEW: Handle the Check/Wrong scoring
+    // Handle scoring and auto-reset
     socket.on('question-result', (data) => {
         if (data.status === 'correct') {
-            // Tell everyone to turn that specific box a permanent color
+            // Update grid for everyone (permanent color change)
             io.emit('update-grid', data);
         }
-        // Auto-reset the buzzer for the next round
+        
+        // Reset state for the next round
         firstBuzzer = null;
+        currentActiveQuestion = null; 
         io.emit('reset-buzzer');
     });
 
     // Handle the Buzzing
     socket.on('buzz', (groupData) => {
+        // Only allow buzz if no one has buzzed yet
         if (firstBuzzer === null) {
             firstBuzzer = groupData;
-            io.emit('buzzed', firstBuzzer); // Broadcast to EVERYONE
+            io.emit('buzzed', firstBuzzer); 
             console.log(`🔔 ${groupData.name} buzzed first!`);
         }
     });
 
-    // Handle Full System Reset
+    // Full System Reset
     socket.on('reset', () => {
         firstBuzzer = null;
+        currentActiveQuestion = null;
         io.emit('reset-buzzer');
-        console.log("♻️ System Reset");
+        io.emit('hide-question'); // Ensure UI is cleared for everyone
+        console.log("♻️ System Reset by Admin");
     });
 });
 
-// Render dynamic port
+// Prepared and modified by John Renz I. Vertudazo
 const PORT = process.env.PORT || 3000; 
 server.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
