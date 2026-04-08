@@ -9,39 +9,55 @@ const io = new Server(server);
 
 // Track who buzzed first
 let firstBuzzer = null;
-// Track active colors to prevent duplicates (Optional)
-let activeColors = new Set();
 
 app.use(express.static(__dirname));
 
 io.on('connection', (socket) => {
-    // Send current state to the new connection
+    // Sync late-comers with the current buzz state
     if (firstBuzzer) {
         socket.emit('buzzed', firstBuzzer);
     }
 
+    // NEW: Tell students to open their modal when Admin opens a question
+    socket.on('open-question', (data) => {
+        socket.broadcast.emit('show-question', data);
+    });
+
+    // NEW: Tell students to close their modal
+    socket.on('close-question', () => {
+        socket.broadcast.emit('hide-question');
+    });
+
+    // NEW: Handle the Check/Wrong scoring
+    socket.on('question-result', (data) => {
+        if (data.status === 'correct') {
+            // Tell everyone to turn that specific box a permanent color
+            io.emit('update-grid', data);
+        }
+        // Auto-reset the buzzer for the next round
+        firstBuzzer = null;
+        io.emit('reset-buzzer');
+    });
+
+    // Handle the Buzzing
     socket.on('buzz', (groupData) => {
-        // "One-time buzz" logic: only allow if nobody has buzzed yet
         if (firstBuzzer === null) {
             firstBuzzer = groupData;
-            io.emit('buzzed', firstBuzzer); 
+            io.emit('buzzed', firstBuzzer); // Broadcast to EVERYONE
             console.log(`🔔 ${groupData.name} buzzed first!`);
         }
     });
 
+    // Handle Full System Reset
     socket.on('reset', () => {
         firstBuzzer = null;
         io.emit('reset-buzzer');
-        console.log("♻️ System Reset by Admin");
-    });
-
-    socket.on('disconnect', () => {
-        // Clean up logic can go here if needed
+        console.log("♻️ System Reset");
     });
 });
 
-// Render dynamic port logic
+// Render dynamic port
 const PORT = process.env.PORT || 3000; 
 server.listen(PORT, () => {
-    console.log(`✅ Server is live on port ${PORT}`);
+    console.log(`✅ Server running on port ${PORT}`);
 });
