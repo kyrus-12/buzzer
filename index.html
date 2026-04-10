@@ -174,7 +174,7 @@
 
     <div id="wait-screen" class="hidden">
         <h1 id="wait-text">READY</h1>
-        <button id="buzz-btn" onclick="sendBuzz()">?</button>
+        <button id="buzz-btn" onclick="sendBuzz()">I KNOW!</button>
         <div id="live-q-notif" class="question-display hidden">
             <span id="q-title-sync" class="q-title-text">QUESTION TITLE</span>
             <div id="q-text-sync" class="q-body-text">Question content...</div>
@@ -327,7 +327,7 @@
             if (currentWinner && currentQId) {
                 socket.emit('question-result', { id: currentQId, color: currentWinner.color, status: 'correct' });
                 closeQuestionAdmin();
-            } else alert("Wait for a buzz!");
+            } else alert("Wait for a click!");
         }
 
         function markWrong() {
@@ -357,7 +357,7 @@
     document.body.style.backgroundColor = winner.color;
     
     // This creates "BLUE JAMES BUZZED!"
-    const msg = winner.name.toUpperCase() + " BUZZED!";
+    const msg = winner.name.toUpperCase() + " WANTS TO ANSWER!";
     
     if (isAdmin) {
         // 'admin-q-title' is the ID for the yellow text in your modal
