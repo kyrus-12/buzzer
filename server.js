@@ -1,4 +1,4 @@
-const express = require('express');
+This is my server.js what will I change? const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
@@ -7,77 +7,105 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// State Management
-let buzzedUser = null; // Tracks who buzzed first
-let currentQuestion = null;
+// Track current state
+let firstBuzzer = null;
+let currentActiveQuestion = null; // Track if a question is currently live
 
-// Serve the HTML file
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+app.use(express.static(__dirname));
 
 io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
+    // 1. Sync late-comers with the current buzzer state
+    if (firstBuzzer) {
+        socket.emit('buzzed', firstBuzzer);
+    }
 
-    // 1. Admin logs in - trigger music for everyone if desired
+    // 2. Sync late-comers with the active question (So it doesn't disappear on refresh)
+    if (currentActiveQuestion) {
+        socket.emit('show-question', currentActiveQuestion);
+    }
+
+    // --- ADD THE MUSIC SYNC LOGIC HERE ---
     socket.on('admin-logged-in', () => {
-        socket.broadcast.emit('start-music');
+        // This sends the 'start-music' command to EVERYONE connected
+        io.emit('start-music'); 
+        console.log("🎵 Admin logged in: Triggering music for everyone.");
     });
 
-    // 2. Admin opens a question
+    // Admin opens a question
     socket.on('open-question', (data) => {
-        currentQuestion = data;
-        buzzedUser = null; // Clear any previous buzzer for the new question
-        io.emit('show-question', data);
-        io.emit('reset-buzzer', false); // Reset the visual "Buzzed" state on clients
+        currentActiveQuestion = data; // Store the state
+        socket.broadcast.emit('show-question', data);
     });
 
-    // 3. Student hits the Buzzer
-    socket.on('buzz', (userData) => {
-        // Only the first buzz is recorded
-        if (!buzzedUser) {
-            buzzedUser = userData;
-            console.log(`${userData.name} buzzed first!`);
-            io.emit('buzzed', buzzedUser); // Tell everyone who won the race
-        }
+    // Admin closes a question
+    socket.on('close-question', () => {
+        currentActiveQuestion = null; // Clear the state
+        socket.broadcast.emit('hide-question');
     });
 
-    // 4. Admin marks answer as Correct or Wrong
-    socket.on('question-result', (result) => {
-        if (result.status === 'correct') {
-            // Update the grid for everyone to show the question is solved
-            io.emit('update-grid', { 
-                id: result.id, 
-                color: result.color 
-            });
+    // Handle scoring and auto-reset
+    socket.on('question-result', (data) => {
+        if (data.status === 'correct') {
+            // data.color is now the detected "red"
+            io.emit('update-grid', data);
         }
         
-        // Reset the buzzer lock for the next attempt or next question
-        buzzedUser = null;
-        io.emit('reset-buzzer', false);
+        firstBuzzer = null;
+        currentActiveQuestion = null; 
+        
+        // Pass 'false' to reset the UI but keep the grid colors
+        io.emit('reset-buzzer', false); 
+        io.emit('hide-question'); 
     });
 
-    // 5. Admin closes question without result
-    socket.on('close-question', () => {
-        currentQuestion = null;
-        buzzedUser = null;
-        io.emit('hide-question');
-        io.emit('reset-buzzer', false);
+    // --- PASTE THE UPDATED BUZZ HERE ---
+    socket.on('buzz', (groupData) => {
+        // groupData is now { name: "Red Jr.", color: "red" }
+        if (firstBuzzer === null) {
+            firstBuzzer = groupData;
+            io.emit('buzzed', firstBuzzer); 
+            console.log(`🔔 ${groupData.name} (${groupData.color}) buzzed first!`);
+        }
     });
 
-    // 6. Full System Reset
+    // Full System Reset
     socket.on('reset', () => {
-        buzzedUser = null;
-        currentQuestion = null;
-        io.emit('reset-buzzer', true); // 'true' triggers the grid clear in your HTML
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected');
-    });
+    firstBuzzer = null;
+    currentActiveQuestion = null;
+    // Add 'true' here to signal a FULL reset
+    io.emit('reset-buzzer', true); 
+    io.emit('hide-question'); 
+    console.log("♻️ Full System Reset by Admin");
+});
 });
 
-const PORT = process.env.PORT || 3000;
+// Prepared and modified by John Renz I. Vertudazo
+const PORT = process.env.PORT || 3000; 
 server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-});
+    console.log(`✅ Server running on port ${PORT}`);
+});Where will I put this? // Handle scoring and auto-reset
+    socket.on('question-result', (data) => {
+        if (data.status === 'correct') {
+            // data.color here will be the detected color (e.g., "red")
+            // sent from your new login logic in the HTML
+            io.emit('update-grid', data);
+        }
+        
+        // Reset state for the next round
+        firstBuzzer = null;
+        currentActiveQuestion = null; 
+        
+        // We pass 'false' here because it's a round reset, not a full game reset
+        io.emit('reset-buzzer', false); 
+        io.emit('hide-question'); // Ensure question disappears for students
+    });
+
+    // Handle the Buzzing
+    socket.on('buzz', (groupData) => {
+        // groupData now contains { name: "Red Jr.", color: "red" }
+        if (firstBuzzer === null) {
+            firstBuzzer = groupData;
+            io.emit('buzzed', firstBuzzer); 
+            console.log(`🔔 ${groupData.name} (${groupData.color}) buzzed first!`);
+        }
+    });
