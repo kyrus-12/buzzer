@@ -5,130 +5,81 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 
-// Track current state
-let firstBuzzer = null;
-let currentActiveQuestion = null;
+// Increase the max payload size just in case you have very long exams with many images/options
+const io = new Server(server, {
+    maxHttpBufferSize: 1e7 // 10MB
+});
 
-// Data storage for TEIL Assessment
+// In-memory "Database"
 let questionBank = [];
-let studentResults = {};
+let studentResults = {}; // Keys will now be "[Section] SetName"
 
-// SECURITY: Admin passwords stored server-side only
-const MASTER_ADMIN_PASSWORDS = ["1234", "Science7", "AdminAdmin", "Tick2026"];
-
-app.use(express.static(__dirname));
+// Serve static files from the 'public' folder
+app.use(express.static(path.join(__dirname, 'public')));
 
 io.on('connection', (socket) => {
-    // 1. Sync late-comers with the current buzzer state
-    if (firstBuzzer) {
-        socket.emit('buzzed', firstBuzzer);
-    }
+    console.log('User connected:', socket.id);
 
-    // 2. Sync late-comers with the active question
-    if (currentActiveQuestion) {
-        socket.emit('show-question', currentActiveQuestion);
-    }
+    // 1. Sync data immediately on connection
+    socket.emit('initData', { questionBank, studentResults });
 
-    // 3. Send initial data to TEIL Assessment clients
-    socket.emit('initData', {
-        questionBank: questionBank,
-        studentResults: studentResults
-    });
-
-    // --- TEIL ASSESSMENT AUTHENTICATION HANDLERS ---
-    
-    // Admin authentication
-    socket.on('adminAuth', (pass, callback) => {
-        const isValid = MASTER_ADMIN_PASSWORDS.includes(pass);
-        callback({ success: isValid });
-    });
-    
-    // Verify if password is an admin password (for student login blocking)
-    socket.on('verifyExamPass', (pass, callback) => {
-        const isAdminPass = MASTER_ADMIN_PASSWORDS.includes(pass);
-        callback({ isAdminPass: isAdminPass });
-    });
-
-    // Save new question
+    // 2. Admin: Save new question
     socket.on('saveQuestion', (qData) => {
-        // Remove existing question with same ID if exists
-        questionBank = questionBank.filter(q => q.id !== qData.id);
         questionBank.push(qData);
-        io.emit('updateQuestions', questionBank);
-        console.log(`📝 Question saved for set: ${qData.set}`);
+        io.emit('updateQuestions', questionBank); 
     });
 
-    // Delete question
-    socket.on('deleteQuestion', (id) => {
-        questionBank = questionBank.filter(q => q.id !== id);
+    // 3. Admin: Delete an entire Question Set
+    socket.on('deleteSet', (setName) => {
+        questionBank = questionBank.filter(q => q.set !== setName);
         io.emit('updateQuestions', questionBank);
-        console.log(`🗑️ Question deleted: ${id}`);
     });
 
-    // Submit exam results
-    socket.on('submitExam', (data) => {
-        const folder = data.folder;
+    // 4. Admin: Delete a specific Question (By ID)
+    socket.on('deleteQuestion', (qId) => {
+        questionBank = questionBank.filter(q => q.id !== qId);
+        io.emit('updateQuestions', questionBank);
+    });
+
+    // 5. Admin: Delete Results Folder (The "[Section] SetName" folder)
+    socket.on('deleteResultsFolder', (folderName) => {
+        if (studentResults[folderName]) {
+            delete studentResults[folderName];
+            io.emit('updateResults', studentResults);
+        }
+    });
+
+    // 6. Student: Submit Exam
+    socket.on('submitExam', (result) => {
+        const folder = result.folder; // This is "[Section] SetName" from the client
+        
         if (!studentResults[folder]) {
             studentResults[folder] = [];
         }
-        studentResults[folder].push(data);
-        io.emit('updateResults', studentResults);
-        console.log(`📊 Exam submitted: ${data.n} - ${data.sp}`);
-    });
 
-    // --- MUSIC SYNC LOGIC ---
-    socket.on('admin-logged-in', () => {
-        io.emit('start-music'); 
-        console.log("🎵 Admin logged in: Triggering music for everyone.");
-    });
-
-    // Admin opens a question
-    socket.on('open-question', (data) => {
-        currentActiveQuestion = data;
-        socket.broadcast.emit('show-question', data);
-    });
-
-    // Admin closes a question
-    socket.on('close-question', () => {
-        currentActiveQuestion = null;
-        socket.broadcast.emit('hide-question');
-    });
-
-    // Handle scoring and auto-reset
-    socket.on('question-result', (data) => {
-        if (data.status === 'correct') {
-            io.emit('update-grid', data);
-        }
+        // Check if student already submitted to this specific folder/section
+        const existingEntry = studentResults[folder].find(r => r.n === result.n);
         
-        firstBuzzer = null;
-        currentActiveQuestion = null;
-        
-        io.emit('reset-buzzer', false); 
-        io.emit('hide-question'); 
-    });
-
-    // Updated buzz handler
-    socket.on('buzz', (groupData) => {
-        if (firstBuzzer === null) {
-            firstBuzzer = groupData;
-            io.emit('buzzed', firstBuzzer); 
-            console.log(`🔔 ${groupData.name} (${groupData.color}) buzzed first!`);
+        if (!existingEntry) {
+            // Push the full result including the 'review' array and 'sec' (section)
+            studentResults[folder].push(result);
+            io.emit('updateResults', studentResults); 
+        } else {
+            console.log(`Duplicate submission blocked: ${result.n} in ${folder}`);
         }
     });
 
-    // Full System Reset
-    socket.on('reset', () => {
-        firstBuzzer = null;
-        currentActiveQuestion = null;
-        io.emit('reset-buzzer', true); 
-        io.emit('hide-question'); 
-        console.log("♻️ Full System Reset by Admin");
+    socket.on('disconnect', () => {
+        console.log('User disconnected');
     });
 });
 
-const PORT = process.env.PORT || 3000; 
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
 });
