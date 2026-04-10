@@ -46,23 +46,25 @@ io.on('connection', (socket) => {
     // Handle scoring and auto-reset
     socket.on('question-result', (data) => {
         if (data.status === 'correct') {
-            // Update grid for everyone (permanent color change)
+            // data.color is now the detected "red"
             io.emit('update-grid', data);
         }
         
-        // Reset state for the next round
         firstBuzzer = null;
         currentActiveQuestion = null; 
-        io.emit('reset-buzzer');
+        
+        // Pass 'false' to reset the UI but keep the grid colors
+        io.emit('reset-buzzer', false); 
+        io.emit('hide-question'); 
     });
 
-    // Handle the Buzzing
+    // --- PASTE THE UPDATED BUZZ HERE ---
     socket.on('buzz', (groupData) => {
-        // Only allow buzz if no one has buzzed yet
+        // groupData is now { name: "Red Jr.", color: "red" }
         if (firstBuzzer === null) {
             firstBuzzer = groupData;
             io.emit('buzzed', firstBuzzer); 
-            console.log(`🔔 ${groupData.name} buzzed first!`);
+            console.log(`🔔 ${groupData.name} (${groupData.color}) buzzed first!`);
         }
     });
 
