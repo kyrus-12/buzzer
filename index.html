@@ -353,16 +353,20 @@
         });
 
         socket.on('buzzed', (winner) => {
-            currentWinner = winner;
-            document.body.style.backgroundColor = winner.color;
-            const msg = winner.name.toUpperCase() + " BUZZED!";
-            if (isAdmin) {
-                document.getElementById('admin-q-title').innerText = msg;
-            } else {
-                document.getElementById('wait-text').innerText = msg;
-                document.getElementById('buzz-btn').disabled = true;
-            }
-        });
+    currentWinner = winner; 
+    document.body.style.backgroundColor = winner.color;
+    
+    // This creates "BLUE JAMES BUZZED!"
+    const msg = winner.name.toUpperCase() + " BUZZED!";
+    
+    if (isAdmin) {
+        // 'admin-q-title' is the ID for the yellow text in your modal
+        document.getElementById('admin-q-title').innerText = msg;
+    } else {
+        document.getElementById('wait-text').innerText = msg;
+        document.getElementById('buzz-btn').disabled = true;
+    }
+});
 
         socket.on('update-grid', (data) => {
             const box = document.getElementById(data.id);
