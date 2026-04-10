@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GUESS-piratory System Buzzer</title>
+    <title>GUESS-piratory System Button</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root { 
@@ -164,7 +164,7 @@
 
     <div id="login-screen">
         <div class="login-card">
-            <h2 style="margin-top:0">Buzzer Login</h2>
+            <h2 style="margin-top:0">GUESS-piratory Login</h2>
             <input type="text" id="groupName" placeholder="Group Color (e.g. Red)">
             <input type="password" id="groupPass" placeholder="Password">
             <button class="login-btn" onclick="login()">Enter Game</button>
@@ -174,7 +174,7 @@
 
     <div id="wait-screen" class="hidden">
         <h1 id="wait-text">READY</h1>
-        <button id="buzz-btn" onclick="sendBuzz()">BUZZ!</button>
+        <button id="buzz-btn" onclick="sendBuzz()">?</button>
         <div id="live-q-notif" class="question-display hidden">
             <span id="q-title-sync" class="q-title-text">QUESTION TITLE</span>
             <div id="q-text-sync" class="q-body-text">Question content...</div>
@@ -276,7 +276,7 @@
 
     document.getElementById('login-screen').classList.add('hidden');
     
-    if (passInput === "123") {
+    if (passInput === "jriv123") {
         isAdmin = true;
         document.getElementById('main-section').classList.remove('hidden');
         socket.emit('admin-logged-in');
