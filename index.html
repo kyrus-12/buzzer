@@ -350,22 +350,21 @@ function login() {
         });
 
         socket.on('buzzed', (winner) => {
-    currentWinner = winner; // winner contains { name: "Blue James", color: "blue" }
-    
+    currentWinner = winner; 
     document.body.style.backgroundColor = winner.color;
     
-    // Transform the full name to uppercase and add " BUZZED!"
+    // This creates "BLUE JAMES BUZZED!"
     const msg = winner.name.toUpperCase() + " BUZZED!";
     
     if (isAdmin) {
-        // This updates the yellow text in your screenshot modal
-        document.getElementById('admin-q-title').innerText = msg; 
+        // 'admin-q-title' is the ID for the yellow text in your modal
+        document.getElementById('admin-q-title').innerText = msg;
     } else {
         document.getElementById('wait-text').innerText = msg;
         document.getElementById('buzz-btn').disabled = true;
     }
 });
-
+        
         socket.on('update-grid', (data) => {
             const box = document.getElementById(data.id);
             if (box) {
