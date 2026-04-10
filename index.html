@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GUESS-piratory System Buzzer</title>
+    <title>GUESS-piratory System Button</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root { 
@@ -174,12 +174,12 @@
 
     <div id="wait-screen" class="hidden">
         <h1 id="wait-text">READY</h1>
-        <button id="buzz-btn" onclick="sendBuzz()">BUZZ!</button>
+        <button id="buzz-btn" onclick="sendBuzz()">I KNOW!</button>
         <div id="live-q-notif" class="question-display hidden">
             <span id="q-title-sync" class="q-title-text">QUESTION TITLE</span>
             <div id="q-text-sync" class="q-body-text">Question content...</div>
         </div>
-        <button class="fs-btn" onclick="toggleFS()">Full Screen (F)</button>
+        <button class="fs-btn" onclick="toggleFS()">Full Screen</button>
     </div>
 
     <div id="admin-modal-overlay" class="hidden">
@@ -258,7 +258,7 @@
             if (!nameInput) return alert("Enter a name!");
 
             myName = nameInput; 
-            const colors = ["red", "blue", "green", "yellow", "purple", "orange", "pink"];
+            const colors = ["red", "blue", "green", "teal", "magenta", "orange", "tan", "maroon", "plum", "gold"];
             const detectedColor = colors.find(c => nameInput.toLowerCase().includes(c));
             myColor = detectedColor || "blue";
 
@@ -337,7 +337,7 @@
         socket.on('buzzed', (winner) => {
             currentWinner = winner; 
             document.body.style.backgroundColor = winner.color;
-            const msg = winner.name.toUpperCase() + " BUZZED!";
+            const msg = winner.name.toUpperCase() + " WANTS TO ANSWER!";
             
             if (isAdmin) {
                 document.getElementById('admin-q-title').innerText = msg;
