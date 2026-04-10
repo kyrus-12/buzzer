@@ -259,28 +259,37 @@
         }
 
         function login() {
-            const nameInput = document.getElementById('groupName').value.trim();
-            const passInput = document.getElementById('groupPass').value.trim();
-            if (!nameInput) return alert("Enter a color!");
-            
-            myName = nameInput;
-            myColor = nameInput.toLowerCase();
-            document.getElementById('login-screen').classList.add('hidden');
-            
-            if (passInput === "123") {
-                isAdmin = true;
-                document.getElementById('main-section').classList.remove('hidden');
-                socket.emit('admin-logged-in');
-            } else {
-                document.getElementById('wait-screen').classList.remove('hidden');
-                document.body.style.backgroundColor = myColor;
-                document.getElementById('wait-text').innerText = myName.toUpperCase() + " READY";
-            }
+    const nameInput = document.getElementById('groupName').value.trim();
+    const passInput = document.getElementById('groupPass').value.trim();
+    if (!nameInput) return alert("Enter a name/color!");
 
-            if(player && typeof player.playVideo === 'function') {
-                player.playVideo();
-            }
-        }
+    // List of supported CSS colors or your specific game colors
+    const colors = ["red", "blue", "green", "teal", "fuchsia", "orange", "pink"];
+    
+    myName = nameInput; // Keeps "Red Jr."
+    
+    // Find if the input contains any of our colors
+    const detectedColor = colors.find(c => nameInput.toLowerCase().includes(c));
+    
+    // Fallback to a default if no color is found, otherwise use the detected one
+    myColor = detectedColor || "#2c3e50"; 
+
+    document.getElementById('login-screen').classList.add('hidden');
+    
+    if (passInput === "123") {
+        isAdmin = true;
+        document.getElementById('main-section').classList.remove('hidden');
+        socket.emit('admin-logged-in');
+    } else {
+        document.getElementById('wait-screen').classList.remove('hidden');
+        document.body.style.backgroundColor = myColor; // Sets background to "red"
+        document.getElementById('wait-text').innerText = myName.toUpperCase() + " READY"; // Shows "RED JR READY"
+    }
+
+    if(player && typeof player.playVideo === 'function') {
+        player.playVideo();
+    }
+}
 
         document.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
