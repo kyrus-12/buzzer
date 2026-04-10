@@ -83,29 +83,4 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000; 
 server.listen(PORT, () => {
     console.log(`✅ Server running on port ${PORT}`);
-});Where will I put this? // Handle scoring and auto-reset
-    socket.on('question-result', (data) => {
-        if (data.status === 'correct') {
-            // data.color here will be the detected color (e.g., "red")
-            // sent from your new login logic in the HTML
-            io.emit('update-grid', data);
-        }
-        
-        // Reset state for the next round
-        firstBuzzer = null;
-        currentActiveQuestion = null; 
-        
-        // We pass 'false' here because it's a round reset, not a full game reset
-        io.emit('reset-buzzer', false); 
-        io.emit('hide-question'); // Ensure question disappears for students
-    });
-
-    // Handle the Buzzing
-    socket.on('buzz', (groupData) => {
-        // groupData now contains { name: "Red Jr.", color: "red" }
-        if (firstBuzzer === null) {
-            firstBuzzer = groupData;
-            io.emit('buzzed', firstBuzzer); 
-            console.log(`🔔 ${groupData.name} (${groupData.color}) buzzed first!`);
-        }
-    });
+});
