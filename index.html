@@ -2,438 +2,448 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GUESS-piratory System Button</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TEIL Assessment Pro | Real-Time</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        :root { 
-            --bg-dark: #1a1a2e; 
-            --accent: #27ae60; 
-            --danger: #e74c3c; 
-            --glass: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
+        :root {
+            --primary: #6366f1; --bg: #0b0f1a; --card: #1e293b;
+            --text-main: #f8fafc; --text-dim: #94a3b8; --accent: #22d3ee;
+            --success: #10b981; --error: #ef4444; --border: #334155;
         }
-
-        body { 
-            margin: 0; 
-            font-family: 'Inter', 'Segoe UI', sans-serif; 
-            background: var(--bg-dark); 
-            color: white; 
-            transition: background 0.5s ease; 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden; 
-        }
-
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main); overflow-x: hidden; }
+        .app-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .hidden { display: none !important; }
+        .glass-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+        .btn { padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; display: inline-block; text-align: center; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: var(--error); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+        input, select, textarea { background: #0f172a; border: 1px solid var(--border); border-radius: 6px; color: white; padding: 12px; width: 100%; margin-bottom: 12px; box-sizing: border-box; }
+        
+        .analytics-table { width: 100%; border-collapse: collapse; margin-top: 15px; table-layout: fixed; }
+        .analytics-table th { background: rgba(255,255,255,0.05); text-align: left; padding: 12px; color: var(--accent); border-bottom: 2px solid var(--border); }
+        .analytics-table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; word-wrap: break-word; vertical-align: top; }
+        
+        .option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .option-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 15px; border-radius: 10px; cursor: pointer; }
+        .option-card.selected { border-color: var(--accent); background: rgba(34, 211, 238, 0.1); }
+        
+        .folder-wrapper { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
+        .folder-btn { flex-grow: 1; text-align: left; padding: 12px; background: #0f172a; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; color: var(--accent); font-weight: 600; }
+        
+        .q-img { max-width: 100%; border-radius: 8px; margin: 10px 0; display: block; border: 1px solid var(--border); }
+        .admin-correct-highlight { color: var(--success); font-weight: bold; background: rgba(16, 185, 129, 0.1); padding: 2px 6px; border-radius: 4px; }
 
-        /* Login Styling */
-        #login-screen { flex: 1; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, #2c3e50 0%, #000 100%); }
-        .login-card { 
-            background: rgba(255, 255, 255, 0.95); 
-            color: #333; 
-            padding: 40px; 
-            border-radius: 24px; 
-            text-align: center; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            width: 320px;
-        }
-        input { 
-            display: block; width: 100%; margin: 15px 0; padding: 14px; 
-            border-radius: 10px; border: 1px solid #ddd; font-size: 1rem; box-sizing: border-box;
-        }
-        .login-btn { 
-            background: var(--accent); color: white; border: none; width: 100%;
-            padding: 12px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; font-weight: bold; 
-            transition: 0.3s;
-        }
-        .login-btn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+        #fs-overlay { position: fixed; inset: 0; background: var(--error); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+        
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border); }
+        .review-item { text-align: left; border-bottom: 1px solid var(--border); padding: 10px 0; margin-bottom: 10px; font-size: 0.9rem; }
+        .review-correct { color: var(--success); font-weight: 600; }
+        .review-wrong { color: var(--error); font-weight: 600; }
 
-        /* Wait Screen (Buzzer Section) */
-        #wait-screen { 
-            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            padding: 20px; text-align: center;
-        }
-
-        #wait-text { font-size: 2.5rem; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 30px; }
-
-        /* Student Question (Below Buzzer) */
-        .question-display {
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            padding: 25px;
-            border-radius: 20px;
-            margin-top: 30px;
-            max-width: 600px;
-            width: 90%;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            animation: slideUp 0.5s ease-out;
-        }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-        .q-title-text { color: #f1c40f; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 10px; }
-        .q-body-text { font-size: 2rem; font-weight: 600; line-height: 1.3; }
-
-        /* Admin Section & Blur Logic */
-        #main-section { height: 100vh; overflow-y: auto; padding: 40px 20px; text-align: center; transition: filter 0.3s ease; }
-        body.modal-open #main-section { filter: blur(8px); pointer-events: none; }
-
-        .grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-            gap: 20px; max-width: 900px; margin: 30px auto; 
-        }
-        .box { 
-            background: var(--glass); border: 1px solid var(--glass-border); 
-            padding: 25px; border-radius: 15px; cursor: pointer; 
-            transition: all 0.3s; font-weight: bold; font-size: 1.2rem; 
-        }
-        .box:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-5px); }
-
-        /* Admin Modal Overlay */
-        #admin-modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center;
-            z-index: 1000;
-        }
-
-        .admin-modal-content {
-            background: #2c3e50; border: 2px solid var(--glass-border);
-            padding: 40px; border-radius: 30px; text-align: center;
-            width: 90%; max-width: 550px; box-shadow: 0 25px 50px rgba(0,0,0,0.6);
-        }
-
-        .modal-btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 30px; }
-        .ctrl-btn { border: none; padding: 12px 24px; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; flex: 1; }
-        .btn-check { background: var(--accent); }
-        .btn-wrong { background: var(--danger); }
-        .btn-close { background: #7f8c8d; }
-        .ctrl-btn:hover { filter: brightness(1.2); transform: scale(1.05); }
-
-        /* Buzzer Button */
-        #buzz-btn { 
-            width: 220px; height: 220px; border-radius: 50%; border: 10px solid white; 
-            background: linear-gradient(145deg, #e74c3c, #c0392b); color: white; 
-            font-size: 2rem; font-weight: 900; cursor: pointer; transition: 0.2s; 
-            box-shadow: 0 15px 0 #922b21, 0 20px 30px rgba(0,0,0,0.4); 
-            display: block; outline: none;
-        }
-        #buzz-btn:active { transform: translateY(10px); box-shadow: 0 5px 0 #922b21; }
-        #buzz-btn:disabled { background: #555; box-shadow: 0 5px 0 #333; opacity: 0.6; cursor: not-allowed; transform: translateY(10px); }
-
-        .fs-btn { position: fixed; bottom: 20px; left: 20px; background: var(--glass); border: 1px solid var(--glass-border); color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
-        .reset-link { margin-top: 40px; color: #aaa; cursor: pointer; font-size: 0.8rem; }
-        footer { padding: 20px; font-size: 0.7rem; opacity: 0.5; }
-        #yt-player { position: absolute; top: -1000px; visibility: hidden; }
-
-        /* Music Control Panel */
-        .music-controls {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            display: flex;
-            gap: 8px;
-            z-index: 2000; /* Above modals */
-            background: var(--glass);
-            padding: 10px;
-            border-radius: 12px;
-            backdrop-filter: blur(5px);
-            border: 1px solid var(--glass-border);
-        }
-
-        .m-btn {
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: 0.2s;
-        }
-
-        .m-btn:hover { background: var(--accent); }
-        .m-btn:active { transform: scale(0.95); }
+        .admin-review-modal { background: rgba(0,0,0,0.8); position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .admin-review-content { background: var(--card); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 700px; max-height: 80vh; overflow-y: auto; padding: 25px; }
+        .clickable-row { cursor: pointer; transition: 0.2s; }
+        .clickable-row:hover { background: rgba(255,255,255,0.05); }
     </style>
 </head>
 <body>
 
-    <div id="yt-player"></div>
+<div id="fs-overlay" class="hidden">
+    <h1>⚠️ WARNING</h1>
+    <p>Illegal Exit Detected. Access to exam is locked.</p>
+    <button class="btn btn-primary" onclick="goFullScreen()">RETURN TO FULLSCREEN</button>
+</div>
 
-    <div id="login-screen">
-        <div class="login-card">
-            <h2 style="margin-top:0">GUESS-piratory Login</h2>
-            <input type="text" id="groupName" placeholder="Group Color (e.g. Red)">
-            <input type="password" id="groupPass" placeholder="Password">
-            <button class="login-btn" onclick="login()">Enter Game</button>
-            <p style="font-size: 10px; color: #999; margin-top: 15px;"></p>
+<div id="adminDetailModal" class="admin-review-modal hidden">
+    <div class="admin-review-content">
+        <h2 id="modalStudentName" style="color:var(--accent)">Student Details</h2>
+        <div id="modalReviewBody"></div>
+        <button class="btn btn-primary" style="width:100%; margin-top: 15px;" onclick="closeAdminModal()">Close Review</button>
+    </div>
+</div>
+
+<div class="app-container">
+    <div id="setupView">
+        <div class="glass-card" style="max-width: 400px; margin: 80px auto; text-align: center;">
+            <h2 style="color:var(--accent)">TEIL Section Portal</h2>
+            <p style="font-size: 0.8rem; color: var(--text-dim);">Students: Name + Section + Pass. Admins: PIN only.</p>
+            <input id="loginName" placeholder="Full Name (Leave blank for Admin)">
+            <input id="loginSection" placeholder="Section (e.g., 7-A)">
+            <input id="loginPass" type="password" placeholder="Access Password / Admin PIN">
+            <button class="btn btn-primary" style="width:100%; margin-bottom: 10px;" onclick="handleAuth()">Access System</button>
+            <button class="btn btn-outline" style="width:100%" onclick="showHistory()">View My History</button>
         </div>
     </div>
 
-    <div id="wait-screen" class="hidden">
-        <h1 id="wait-text">READY</h1>
-        <button id="buzz-btn" onclick="sendBuzz()">I KNOW!</button>
-        <div id="live-q-notif" class="question-display hidden">
-            <span id="q-title-sync" class="q-title-text">QUESTION TITLE</span>
-            <div id="q-text-sync" class="q-body-text">Question content...</div>
+    <div id="historyView" class="hidden">
+        <div class="glass-card">
+            <h2>Your Exam History</h2>
+            <div id="historyList"></div>
+            <button class="btn btn-outline" style="width:100%; margin-top: 20px;" onclick="showView('setupView')">Back to Login</button>
         </div>
-        <button class="fs-btn" onclick="toggleFS()">Full Screen (F)</button>
     </div>
 
-    <div id="admin-modal-overlay" class="hidden">
-        <div class="admin-modal-content">
-            <span id="admin-q-title" class="q-title-text"></span>
-            <div id="admin-q-text" class="q-body-text"></div>
-            <div class="modal-btn-group">
-                <button class="ctrl-btn btn-check" onclick="markCorrect()">CORRECT</button>
-                <button class="ctrl-btn btn-wrong" onclick="markWrong()">WRONG</button>
-                <button class="ctrl-btn btn-close" onclick="closeQuestionAdmin()">CLOSE</button>
+    <div id="editorView" class="hidden">
+        <div class="glass-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2 id="adminTitle">Section Management</h2>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-outline" onclick="openRecords()">Section Results</button>
+                    <button class="btn btn-danger" onclick="location.reload()">Log Out</button>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px; margin-top:20px;">
+                <div>
+                    <h3>Update Assessments</h3>
+                    <input id="qSetName" placeholder="Assessment Name">
+                    <input id="qExamPass" placeholder="Student Access Password (e.g. ScienceQuiz1)">
+                    <input id="qSetPass" placeholder="Admin PIN (Logged In)" readonly style="opacity: 0.6;">
+                    <input id="qSetTime" type="number" placeholder="Time Limit (Minutes)" value="30">
+                    <textarea id="qText" rows="2" placeholder="Question Text or Imgur Link"></textarea>
+                    <textarea id="qOptions" rows="3" placeholder="Choices (one per line)"></textarea>
+                    <input id="qAnswer" placeholder="Correct Answer">
+                    <button class="btn btn-primary" style="width:100%" onclick="saveQuestion()">Update Section Questions</button>
+                </div>
+                <div>
+                    <h3>Current Section Items</h3>
+                    <div id="activeSetsDisplay"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="main-section" class="hidden">
-        <h1 id="admin-header">GUESS-piratory Questions</h1>
-        
-        <div class="grid">
-            <div id="q1" class="box" onclick="adminOpenQ('q1', 'GUESS-tion 1', 'I move up and down when you breathe in and out, Helping your lungs there is no doubt. What am I?')">Q1</div>
-            <div id="q2" class="box" onclick="adminOpenQ('q2', 'GUESS-tion 2', 'I’m behind your nose and mouth, you see, Air passes through me easily. What am I?')">Q2</div>
-            <div id="q3" class="box" onclick="adminOpenQ('q3', 'GUESS-tion 3', 'I sit on your face and help you smell, I take in air and filter it well. What am I?')">Q3</div>
-            <div id="q4" class="box" onclick="adminOpenQ('q4', 'GUESS-tion 4', 'I help you speak and make a sound, Air passing through me gets voice all around. What am I?')">Q4</div>
-            <div id="q5" class="box" onclick="adminOpenQ('q5', 'GUESS-tion 5', 'I branch like a tree inside your chest, Carrying air to lungs at their best. What am I?')">Q5</div>
-            <div id="q6" class="box" onclick="adminOpenQ('q6', 'GUESS-tion 6', 'I’m the whole system that helps you breathe, From nose to lungs, I work with ease. What am I?')">Q6</div>
-            <div id="q7" class="box" onclick="adminOpenQ('q7', 'GUESS-tion 7', 'I’m a tube where air passes through, From throat to lungs that’s what I do. What am I?')">Q7</div>
-            <div id="q8" class="box" onclick="adminOpenQ('q8', 'GUESS-tion 8', 'Inside your nose is where I stay, Warming the air along the way. What am I?')">Q8</div>
-            <div id="q9" class="box" onclick="adminOpenQ('q9', 'GUESS-tion 9', 'I’m where food and air both pass through, Your tongue helps me do what I do. What am I?')">Q9</div>
-            <div id="q10" class="box" onclick="adminOpenQ('q10', 'GUESS-tion 10', 'I come in pairs inside your chest, I help you breathe and do my best. What am I?')">Q10</div>
+    <div id="examView" class="hidden">
+        <div class="glass-card" style="position:sticky; top:10px; z-index:100; display:flex; justify-content:space-between; align-items:center;">
+            <div><b id="dispStudentName"></b> | <span id="dispStudentSection"></span> | <span id="dispSetName"></span></div>
+            <div id="timer" style="font-size:1.6rem; color:var(--error); font-family:'JetBrains Mono'; font-weight:bold;">00:00</div>
         </div>
-
-        <p style="font-size: 0.8rem; color: #aaa; margin-top:20px;">
-            [S] Play | [P] Pause | [N] Next | [F] Fullscreen
-        </p>
-        <div class="reset-link" onclick="resetServer()">Full System Reset</div>
+        <div id="renderArea"></div>
+        <button class="btn btn-primary" style="width:100%; padding:20px;" onclick="submitExam()">Submit Final Answers</button>
     </div>
 
-    <div class="music-controls" id="music-ui">
-        <button class="m-btn" onclick="musicAction('play')">▶</button>
-        <button class="m-btn" onclick="musicAction('pause')">⏸</button>
-        <button class="m-btn" onclick="musicAction('restart')">🔄</button>
+    <div id="analyticsView" class="hidden">
+        <div class="glass-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2>Section Records</h2>
+                <button class="btn btn-outline" onclick="showView('editorView')">Back to Editor</button>
+            </div>
+            <div style="display:grid; grid-template-columns: 280px 1fr; gap:20px;">
+                <div id="folderSidebar" style="border-right: 1px solid var(--border); padding-right:15px;"></div>
+                <div>
+                    <h3 id="viewingSetLabel">Select Folder</h3>
+                    <table class="analytics-table">
+                        <thead><tr><th>Name</th><th>Correct</th><th>Score %</th><th>Time</th><th>Exits</th></tr></thead>
+                        <tbody id="recordsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script>
-        const socket = io();
-        let myName = "", myColor = "", isAdmin = false, currentWinner = null, currentQId = null;
-        let player, currentTrackIndex = 0;
-        const playlist = ['WhUtuhhv1eo', 'C2gt0C4B6vk', 'e1cg3oqDaxk', 'X--47-4Ut2c', 'Ruk1_mtXzHM'];
+    <div id="resultsView" class="hidden">
+        <div id="receiptBox" class="glass-card" style="max-width:600px; margin:auto; text-align:center;">
+            <h1>Completion</h1>
+            <h2 id="resScoreText" style="font-size:4rem; color:var(--accent);">0%</h2>
+            <p id="resStudentName"></p>
+            <p id="resSetNameText"></p>
+            <button class="btn btn-outline" onclick="location.reload()">Exit to Portal</button>
+        </div>
+    </div>
+</div>
 
-        // YT API
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+<script>
+    const socket = io();
+    let questionBank = [];
+    let savedRecords = {};
+    let activeSession = null;
+    let timerInterval, timeLeft, startClock;
+    let userChoices = {};
+    let activeFolder = "";
+    let currentLockedAdminPin = ""; 
 
-        function onYouTubeIframeAPIReady() {
-            player = new YT.Player('yt-player', {
-                height: '0', width: '0', videoId: playlist[currentTrackIndex],
-                events: { 'onStateChange': (e) => { if(e.data === 0) nextTrack(); } }
+    socket.on('initData', (data) => {
+        questionBank = data.questionBank;
+        savedRecords = data.studentResults;
+        if(currentLockedAdminPin) { renderAdminSets(); renderFolderList(); }
+    });
+
+    socket.on('updateQuestions', (data) => {
+        questionBank = data;
+        if(currentLockedAdminPin) renderAdminSets();
+    });
+
+    socket.on('updateResults', (data) => {
+        savedRecords = data;
+        if(currentLockedAdminPin) {
+            renderFolderList();
+            if (activeFolder) loadFolder(activeFolder);
+        }
+    });
+
+    function handleAuth() {
+        const name = document.getElementById('loginName').value.trim();
+        const section = document.getElementById('loginSection').value.trim();
+        const pass = document.getElementById('loginPass').value.trim();
+
+        if (!pass) return alert("Password required.");
+
+        // ADMIN LOGIN - Server-side validation
+        if (!name) {
+            socket.emit('adminAuth', pass, (response) => {
+                if (response && response.success) {
+                    currentLockedAdminPin = pass;
+                    document.getElementById('qSetPass').value = pass;
+                    
+                    // Pre-fill fields if questions exist for this Admin
+                    const existingSet = questionBank.find(q => q.adminPin === pass);
+                    if(existingSet) {
+                        document.getElementById('qSetName').value = existingSet.set;
+                        document.getElementById('qExamPass').value = existingSet.pass;
+                    }
+                    
+                    document.getElementById('adminTitle').innerText = `Admin Session: ${pass}`;
+                    showView('editorView');
+                    renderAdminSets();
+                    renderFolderList();
+                } else {
+                    alert("Invalid Admin PIN.");
+                }
             });
-        }
-        function nextTrack() {
-            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-            player.loadVideoById(playlist[currentTrackIndex]);
+            return;
         }
 
-        function musicAction(action) {
-            if (!player) return;
+        // STUDENT LOGIN - Server-side validation for admin password check
+        if (name && section) {
+            socket.emit('verifyExamPass', pass, (response) => {
+                if (response && response.isAdminPass) {
+                    alert("Access Denied: Use the specific Exam Password provided by your teacher.");
+                    return;
+                }
+                
+                // Find questions where the specific exam pass matches
+                let set = questionBank.filter(q => q.pass === pass);
+                if (set.length > 0) {
+                    let setWithOriginalOrder = set.map((q, idx) => ({ ...q, originalIdx: idx + 1 }));
+                    setWithOriginalOrder = shuffle(setWithOriginalOrder).map(q => ({ ...q, options: shuffle(q.options) }));
+                    initiateExam(name, section, setWithOriginalOrder);
+                } else {
+                    alert("Wrong Exam Password. Ask your teacher for the correct code.");
+                }
+            });
+        } else {
+            alert("Enter Name and Section.");
+        }
+    }
+
+    function showHistory() {
+        const name = document.getElementById('loginName').value.trim();
+        if (!name) return alert("Enter your name first.");
+        
+        const history = [];
+        Object.keys(savedRecords).forEach(folder => {
+            savedRecords[folder].forEach(record => {
+                if (record.n === name) {
+                    history.push({ ...record, folder });
+                }
+            });
+        });
+        
+        document.getElementById('historyList').innerHTML = history.length > 0 
+            ? history.map(h => `
+                <div class="history-item">
+                    <div>
+                        <div><b>${h.folder}</b></div>
+                        <div style="font-size:0.8rem; color:var(--text-dim);">${h.t} | ${h.sec}</div>
+                    </div>
+                    <div style="color:${h.sp === '100%' ? 'var(--success)' : 'var(--accent)'}; font-weight:bold;">${h.sp}</div>
+                </div>
+            `).join('')
+            : '<p style="color:var(--text-dim);">No history found.</p>';
             
-            if (action === 'play') {
-                player.playVideo();
-            } else if (action === 'pause') {
-                player.pauseVideo();
-            } else if (action === 'restart') {
-                player.seekTo(0);
-                player.playVideo();
-            }
-        }
-
-        function login() {
-    const nameInput = document.getElementById('groupName').value.trim();
-    const passInput = document.getElementById('groupPass').value.trim();
-    if (!nameInput) return alert("Enter a name/color!");
-
-    // List of supported CSS colors or your specific game colors
-    const colors = ["red", "blue", "green", "teal", "plum", "orange", "magenta", "maroon", "tan", "gold"];
-    
-    myName = nameInput; // Keeps "Red Jr."
-    
-    // Find if the input contains any of our colors
-    const detectedColor = colors.find(c => nameInput.toLowerCase().includes(c));
-    
-    // Fallback to a default if no color is found, otherwise use the detected one
-    myColor = detectedColor || "#2c3e50"; 
-
-    document.getElementById('login-screen').classList.add('hidden');
-    
-    if (passInput === "jriv123") {
-        isAdmin = true;
-        document.getElementById('main-section').classList.remove('hidden');
-        socket.emit('admin-logged-in');
-    } else {
-        document.getElementById('wait-screen').classList.remove('hidden');
-        document.body.style.backgroundColor = myColor; // Sets background to "red"
-        document.getElementById('wait-text').innerText = myName.toUpperCase() + " READY"; // Shows "RED JR READY"
+        showView('historyView');
     }
 
-    if(player && typeof player.playVideo === 'function') {
-        player.playVideo();
+    function openRecords() {
+        showView('analyticsView');
+        renderFolderList();
     }
-}
 
-        document.addEventListener('keydown', (e) => {
-            const key = e.key.toLowerCase();
-            if (key === 'f') toggleFS();
-            if (isAdmin && player) {
-                if (key === 's') player.playVideo();
-                if (key === 'p') player.pauseVideo();
-                if (key === 'n') nextTrack();
-            }
-        });
+    function closeAdminModal() {
+        document.getElementById('adminDetailModal').classList.add('hidden');
+    }
 
-        function toggleFS() {
-            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-            else if (document.exitFullscreen) document.exitFullscreen();
-        }
+    function renderAdminSets() {
+        const myQuestions = questionBank.filter(q => q.adminPin === currentLockedAdminPin);
+        const setName = myQuestions.length > 0 ? myQuestions[0].set : "New Set";
 
-        // ADMIN MODAL LOGIC
-        function adminOpenQ(id, title, text) {
-            currentQId = id;
-            socket.emit('open-question', { title, text });
-            
-            document.body.classList.add('modal-open');
-            document.getElementById('admin-modal-overlay').classList.remove('hidden');
-            document.getElementById('admin-q-title').innerText = title;
-            document.getElementById('admin-q-text').innerText = text;
-        }
+        document.getElementById('activeSetsDisplay').innerHTML = `
+            <div class="glass-card">
+                <b>${setName} (${myQuestions.length} Items)</b>
+                <div style="margin-top:10px;">
+                    ${myQuestions.map(q => `
+                        <div style="border-bottom:1px solid #334155; padding:5px; position:relative;">
+                            <button class="btn-danger" style="position:absolute; right:0; top:0;" onclick="socket.emit('deleteQuestion', ${q.id})">×</button>
+                            ${q.text}<br><small>Ans: ${q.ans} | Code: ${q.pass}</small>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+    }
 
-        function closeQuestionAdmin() {
-            socket.emit('close-question');
-            document.body.classList.remove('modal-open');
-            document.getElementById('admin-modal-overlay').classList.add('hidden');
-        }
+    function renderFolderList() {
+        const myQuestions = questionBank.filter(q => q.adminPin === currentLockedAdminPin);
+        const mySetName = myQuestions.length > 0 ? myQuestions[0].set : "___";
+        
+        let folders = Object.keys(savedRecords).filter(f => f.includes(mySetName)).sort();
 
-        function markCorrect() {
-            if (currentWinner && currentQId) {
-                socket.emit('question-result', { id: currentQId, color: currentWinner.color, status: 'correct' });
-                closeQuestionAdmin();
-            } else alert("Wait for a click!");
-        }
+        document.getElementById('folderSidebar').innerHTML = folders.map(f => `
+            <div class="folder-wrapper">
+                <button class="folder-btn" onclick="loadFolder('${f}')">📁 ${f}</button>
+            </div>
+        `).join('') || "<small>No results yet.</small>";
+    }
 
-        function markWrong() {
-            socket.emit('question-result', { status: 'wrong' });
-            closeQuestionAdmin();
-        }
+    function saveQuestion() {
+        const set = document.getElementById('qSetName').value.trim();
+        const examPass = document.getElementById('qExamPass').value.trim();
+        const adminPin = currentLockedAdminPin; 
+        const timeLimit = parseInt(document.getElementById('qSetTime').value) || 30;
+        const text = document.getElementById('qText').value.trim();
+        const ans = document.getElementById('qAnswer').value.trim();
+        const options = document.getElementById('qOptions').value.split('\n').filter(o => o.trim());
 
-        function sendBuzz() { socket.emit('buzz', { name: myName, color: myColor }); }
-        function resetServer() { socket.emit('reset'); }
+        if (!set || !examPass || !text || !ans) return alert("Fill Assessment Name, Exam Password, and Question fields.");
+        
+        const qData = { id: Date.now(), set, pass: examPass, adminPin, timeLimit, text, ans, options };
+        socket.emit('saveQuestion', qData);
+        document.getElementById('qText').value = ""; 
+        document.getElementById('qAnswer').value = "";
+        document.getElementById('qOptions').value = "";
+    }
 
-        // SOCKETS
-        socket.on('show-question', (data) => {
-            if (!isAdmin) {
-                const qBox = document.getElementById('live-q-notif');
-                qBox.classList.remove('hidden');
-                document.getElementById('q-title-sync').innerText = data.title;
-                document.getElementById('q-text-sync').innerText = data.text;
-            }
-        });
-
-        socket.on('hide-question', () => {
-            if (!isAdmin) document.getElementById('live-q-notif').classList.add('hidden');
-        });
-
-        socket.on('buzzed', (winner) => {
-    currentWinner = winner; 
-    document.body.style.backgroundColor = winner.color;
+    function shuffle(array) { 
+        let arr = [...array]; 
+        for (let i = arr.length - 1; i > 0; i--) { 
+            const j = Math.floor(Math.random() * (i + 1)); 
+            [arr[i], arr[j]] = [arr[j], arr[i]]; 
+        } 
+        return arr; 
+    }
     
-    // This creates "BLUE JAMES BUZZED!"
-    const msg = winner.name.toUpperCase() + " WANTS TO ANSWER!";
+    function showView(id) { 
+        document.querySelectorAll('.app-container > div').forEach(d => d.classList.add('hidden')); 
+        document.getElementById(id).classList.remove('hidden'); 
+    }
     
-    if (isAdmin) {
-        // 'admin-q-title' is the ID for the yellow text in your modal
-        document.getElementById('admin-q-title').innerText = msg;
-    } else {
-        document.getElementById('wait-text').innerText = msg;
-        document.getElementById('buzz-btn').disabled = true;
-    }
-});
-
-        socket.on('update-grid', (data) => {
-            const box = document.getElementById(data.id);
-            if (box) {
-                box.style.background = data.color;
-                box.style.color = "white";
-                box.onclick = null;
-                box.innerText = "✓";
-            }
-        });
-
-        socket.on('reset-buzzer', (isFullReset) => {
-    currentWinner = null;
-    currentQId = null;
-
-    // 1. Reset Background Colors
-    if (isAdmin) {
-        document.body.style.backgroundColor = "#1a1a2e"; 
-    } else {
-        document.body.style.backgroundColor = myColor;
-        document.getElementById('wait-text').innerText = myName.toUpperCase() + " READY";
-        document.getElementById('buzz-btn').disabled = false;
-        // Hide any active question notifications
-        document.getElementById('live-q-notif').classList.add('hidden');
+    function initiateExam(name, section, set) {
+        goFullScreen();
+        activeSession = { name, section, setName: set[0].set, questions: set, exits: 0 };
+        timeLeft = (set[0].timeLimit || 30) * 60;
+        startClock = Date.now();
+        document.getElementById('dispStudentName').innerText = name;
+        document.getElementById('dispStudentSection').innerText = section;
+        document.getElementById('dispSetName').innerText = activeSession.setName;
+        showView('examView'); 
+        renderQuiz();
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            let m = Math.floor(timeLeft/60), s = timeLeft%60;
+            document.getElementById('timer').innerText = `${m}:${s<10?'0'+s:s}`;
+            if(timeLeft <= 0) submitExam();
+        }, 1000);
     }
 
-    // 2. Clear the Question Grid (Only if it's a Full Reset)
-    if (isFullReset) {
-        const boxes = document.querySelectorAll('.box');
-        boxes.forEach((box, index) => {
-            const qNum = index + 1;
-            const qId = 'q' + qNum;
-            
-            // Restore visual style
-            box.style.background = ""; 
-            box.style.color = "";
-            box.innerText = "Q" + qNum;
-            
-            // Restore click functionality
-            box.onclick = function() {
-                // Manually re-triggering the adminOpenQ logic
-                // Make sure this matches your existing grid content
-                const questions = [
-    'I move up and down when you breathe in and out, Helping your lungs there is no doubt. What am I?',
-    'I’m behind your nose and mouth, you see, Air passes through me easily. What am I?',
-    'I sit on your face and help you smell, I take in air and filter it well. What am I?',
-    'I help you speak and make a sound, Air passing through me gets voice all around. What am I?',
-    'I branch like a tree inside your chest, Carrying air to lungs at their best. What am I?',
-    'I’m the whole system that helps you breathe, From nose to lungs, I work with ease. What am I?',
-    'I’m a tube where air passes through, From throat to lungs that’s what I do. What am I?',
-    'Inside your nose is where I stay, Warming the air along the way. What am I?',
-    'I’m where food and air both pass through, Your tongue helps me do what I do. What am I?',
-    'I come in pairs inside your chest, I help you breathe and do my best. What am I?'
-];
-                adminOpenQ(qId, 'GUESS-tion ' + qNum, questions[index]);
-            };
-        });
-        alert("System Fully Reset for a New Game!");
+    function renderQuiz() {
+        document.getElementById('renderArea').innerHTML = activeSession.questions.map((q, i) => `
+            <div class="glass-card">
+                <p><b>Q${i+1}:</b> ${q.text}</p>
+                <div class="option-grid">${q.options.map(o => `<div class="option-card" id="q${i}-${o.replace(/\s/g,'')}" onclick="selectOpt(${i}, '${o.replace(/'/g, "\\'")}')">${o}</div>`).join('')}</div>
+            </div>
+        `).join('');
     }
-});
 
-        socket.on('start-music', () => {
-            console.log("Admin logged in. Starting music...");
-            if(player && typeof player.playVideo === 'function') {
-                player.playVideo();
-            }
+    function selectOpt(qi, val) {
+        userChoices[qi] = val;
+        document.querySelectorAll(`[id^="q${qi}-"]`).forEach(el => el.classList.remove('selected'));
+        const safeId = val.replace(/\s/g,'');
+        const el = document.getElementById(`q${qi}-${safeId}`);
+        if(el) el.classList.add('selected');
+    }
+
+    function submitExam() {
+        clearInterval(timerInterval);
+        if (document.fullscreenElement) document.exitFullscreen();
+        const elapsed = Math.floor((Date.now() - startClock) / 1000);
+        let score = 0, reviewData = [];
+        activeSession.questions.forEach((q, i) => {
+            const userAns = userChoices[i] || "No Answer";
+            const isCorrect = userAns.toLowerCase().trim() === q.ans.toLowerCase().trim();
+            if (isCorrect) score++;
+            reviewData.push({ origId: q.originalIdx, qText: q.text, uAns: userAns, cAns: q.ans, correct: isCorrect });
         });
-    </script>
+        const final = { 
+            n: activeSession.name, 
+            sec: activeSession.section, 
+            s: `${score}/${activeSession.questions.length}`, 
+            w: `${activeSession.questions.length - score}`, 
+            sp: Math.round((score/activeSession.questions.length)*100) + "%", 
+            t: `${Math.floor(elapsed/60)}m ${elapsed%60}s`, 
+            e: activeSession.exits, 
+            folder: `[${activeSession.section}] ${activeSession.setName}`, 
+            review: reviewData 
+        };
+        socket.emit('submitExam', final);
+        document.getElementById('resScoreText').innerText = final.sp;
+        document.getElementById('resStudentName').innerText = final.n;
+        document.getElementById('resSetNameText').innerText = activeSession.setName;
+        showView('resultsView');
+    }
+
+    function loadFolder(f) {
+        activeFolder = f;
+        document.getElementById('viewingSetLabel').innerText = f;
+        const sorted = (savedRecords[f] || []).sort((a, b) => a.n.localeCompare(b.n));
+        document.getElementById('recordsTableBody').innerHTML = sorted.map(r => `
+            <tr class="clickable-row" onclick="showStudentDetail('${f}', '${r.n}')">
+                <td>${r.n}</td>
+                <td>${r.s}</td>
+                <td>${r.sp}</td>
+                <td>${r.t}</td>
+                <td>${r.e}</td>
+            </tr>
+        `).join('');
+    }
+
+    function showStudentDetail(folder, studentName) {
+        const student = savedRecords[folder].find(r => r.n === studentName);
+        if (!student || !student.review) return;
+        
+        document.getElementById('modalStudentName').innerText = `${student.n} - ${student.sp}`;
+        document.getElementById('modalReviewBody').innerHTML = student.review.map((item, idx) => `
+            <div class="review-item">
+                <div><b>Q${item.origId}:</b> ${item.qText}</div>
+                <div>Your Answer: <span class="${item.correct ? 'review-correct' : 'review-wrong'}">${item.uAns}</span></div>
+                ${!item.correct ? `<div>Correct Answer: <span class="admin-correct-highlight">${item.cAns}</span></div>` : ''}
+            </div>
+        `).join('');
+        document.getElementById('adminDetailModal').classList.remove('hidden');
+    }
+
+    function goFullScreen() { 
+        document.documentElement.requestFullscreen().catch(()=>{}); 
+        document.getElementById('fs-overlay').classList.add('hidden'); 
+    }
+    
+    document.addEventListener('fullscreenchange', () => { 
+        if (!document.fullscreenElement && activeSession) { 
+            document.getElementById('fs-overlay').classList.remove('hidden'); 
+            activeSession.exits++; 
+        } 
+    });
+</script>
 </body>
 </html>
